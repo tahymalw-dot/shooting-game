@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>Legend Shooter — CS2 Tactical 3D</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --fg: #f0f4f8;
+      --acc: #f59e0b;
+      --ct: #38bdf8;
+      --t: #fb923c;
+      --panel: rgba(12, 17, 24, 0.92);
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* Main Menu */
+    #menu {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: radial-gradient(circle at 50% 25%, #1e293b 0%, #090d14 100%);
+      z-index: 30;
+      text-align: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .badge {
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid var(--acc);
+      color: var(--acc);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    #menu h1 {
+      font-size: clamp(32px, 7vw, 68px);
+      margin: 0;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    #menu p {
+      max-width: 620px;
+      opacity: 0.85;
+      line-height: 1.6;
+      margin: 0;
+      font-size: clamp(13px, 2.4vw, 15px);
+    }
+    .menu-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+    }
+    button {
+      background: linear-gradient(180deg, #fbbf24, #d97706);
+      color: #0b0f14;
+      border: 0;
+      padding: 12px 30px;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      border-radius: 6px;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+      transition: transform 0.1s, filter 0.15s;
+    }
+    button:active { transform: scale(0.96); }
+    button:hover { filter: brightness(1.1); }
+    button.sec {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: none;
+      font-size: 14px;
+      padding: 10px 18px;
+    }
+    .stats-bar {
+      display: flex;
+      gap: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* HUD */
+    #hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+      z-index: 10;
+    }
+    /* CS2 Style Dynamic Crosshair */
+    #cross {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      margin: -14px 0 0 -14px;
+    }
+    .ch-line {
+      position: absolute;
+      background: #22c55e;
+      box-shadow: 0 0 2px #000;
+    }
+    #ch-top { left: 13px; top: 2px; width: 2px; height: 7px; }
+    #ch-bot { left: 13px; bottom: 2px; width: 2px; height: 7px; }
+    #ch-left { top: 13px; left: 2px; height: 2px; width: 7px; }
+    #ch-right { top: 13px; right: 2px; height: 2px; width: 7px; }
+    #ch-dot { left: 13px; top: 13px; width: 2px; height: 2px; background: #22c55e; position: absolute; }
+
+    /* Sniper Scope Overlay */
+    #scope-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      pointer-events: none;
+      z-index: 9;
+      background: radial-gradient(circle at center, transparent 28%, #000 31%);
+    }
+    #scope-overlay:before, #scope-overlay:after {
+      content: "";
+      position: absolute;
+      background: rgba(0, 0, 0, 0.85);
+    }
+    #scope-overlay:before { left: 50%; top: 0; width: 2px; height: 100%; }
+    #scope-overlay:after { top: 50%; left: 0; height: 2px; width: 100%; }
+
+    /* CS2 Hitmarker X */
+    #hit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      margin: -12px 0 0 -12px;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    #hit:before, #hit:after {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 0;
+      width: 2px;
+      height: 24px;
+      background: #ef4444;
+    }
+    #hit:before { transform: rotate(45deg); }
+    #hit:after { transform: rotate(-45deg); }
+
+    #dmg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(transparent 45%, rgba(220, 38, 38, 0.65));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    /* Top Scoreboard Bar */
+    #sc {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 15, 22, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: clamp(13px, 2.5vw, 17px);
+      font-weight: 700;
+      white-space: nowrap;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .money-tag { color: #4ade80; direction: ltr; }
+
+    /* Kill Feed */
+    #killfeed {
+      position: absolute;
+      top: 52px;
+      right: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+      font-size: 12px;
+    }
+    .kf-item {
+      background: rgba(10, 15, 22, 0.82);
+      border-right: 3px solid var(--acc);
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: #f8fafc;
+      animation: fadeIn 0.15s ease;
+    }
+    .kf-hs { border-right-color: #ef4444; color: #fca5a5; }
+
+    /* Bottom Left & Right CS2 HUD */
+    .hud-box {
+      position: absolute;
+      bottom: 14px;
+      background: rgba(10, 15, 22, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 14px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+    }
+    #hp-box { left: 16px; display: flex; align-items: baseline; gap: 8px; direction: ltr; }
+    #hp { font-size: clamp(22px, 4.5vw, 34px); font-weight: 900; color: #f8fafc; }
+    #armor { font-size: 16px; font-weight: 700; color: #38bdf8; }
+
+    #am-box { right: 16px; text-align: right; }
+    #wep-name { font-size: 13px; color: var(--acc); font-weight: 700; margin-bottom: 2px; }
+    #am { font-size: clamp(20px, 4vw, 30px); font-weight: 900; direction: ltr; color: #f8fafc; }
+
+    #top-actions {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      display: flex;
+      gap: 6px;
+      pointer-events: auto;
+      z-index: 20;
+    }
+    .mini-btn {
+      background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      padding: 7px 11px;
+      font-size: 12px;
+      border-radius: 5px;
+      font-weight: 700;
+      box-shadow: none;
+    }
+
+    /* Mobile Controls */
+    #mobile-controls {
+      position: fixed;
+      inset: 0;
+      display: none;
+      pointer-events: none;
+      z-index: 15;
+    }
+    #joy-move-zone {
+      position: absolute;
+      left: 20px;
+      bottom: 74px;
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.07);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      pointer-events: auto;
+      touch-action: none;
+    }
+    #joy-move-knob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 52px;
+      height: 52px;
+      margin: -26px 0 0 -26px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.55);
+      border: 2px solid #fff;
+      pointer-events: none;
+    }
+    #touch-aim-zone {
+      position: absolute;
+      top: 52px;
+      right: 0;
+      width: 58%;
+      height: calc(100% - 52px);
+      pointer-events: auto;
+      touch-action: none;
+    }
+    #mobile-btns {
+      position: absolute;
+      right: 16px;
+      bottom: 84px;
+      display: grid;
+      grid-template-columns: repeat(2, 60px);
+      gap: 10px;
+      pointer-events: auto;
+      z-index: 18;
+    }
+    .m-btn {
+      width: 60px;
+      height: 60px;
+      padding: 0;
+      font-size: 12px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.82);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+      touch-action: none;
+    }
+    .m-btn.fire {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+      color: #0b0f14;
+      border-color: #fde68a;
+      font-size: 14px;
+      font-weight: 900;
+    }
+    .m-btn.active { transform: scale(0.91); filter: brightness(1.2); }
+
+    /* CS2 Buy Menu */
+    #shop {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 11, 17, 0.93);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 35;
+      padding: 16px;
+      text-align: center;
+      overflow-y: auto;
+    }
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+      gap: 10px;
+      max-width: 760px;
+      width: 100%;
+    }
+    .shop-card {
+      background: #131c29;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .shop-card button { padding: 7px 12px; font-size: 13px; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <div class="badge">CS2 TACTICAL MOBILE EDITION v0.3</div>
+    <h1>LEGEND SHOOTER</h1>
+    <p>
+      خريطة تكتيكية بخامات 3D، أسلحة CS2 (Glock, MP9, AK-47, Nova, AWP)، ذكاء اصطناعي A* وتغطية خلف الصناديق، وتحكم جوال كامل.
+    </p>
+    <div class="stats-bar">
+      <span>أعلى موجة: <strong id="best-wave">0</strong></span>
+      <span>أعلى نقاط: <strong id="best-score">0</strong></span>
+    </div>
+    <div class="menu-row">
+      <button id="play">ابدأ القتال</button>
+      <button id="toggle-mobile-mode" class="sec">تحكم الجوال: تلقائي</button>
+    </div>
+    <p id="over" style="color:#fbbf24;font-weight:700"></p>
+  </div>
+
+  <div id="scope-overlay"></div>
+
+  <div id="hud">
+    <div id="dmg"></div>
+    <div id="hit"></div>
+    <div id="cross">
+      <div class="ch-line" id="ch-top"></div>
+      <div class="ch-line" id="ch-bot"></div>
+      <div class="ch-line" id="ch-left"></div>
+      <div class="ch-line" id="ch-right"></div>
+      <div id="ch-dot"></div>
+    </div>
+
+    <div id="sc">
+      <span id="sc-text">موجة 1 · أعداء 4</span>
+      <span class="money-tag" id="money-text">$800</span>
+    </div>
+
+    <div id="killfeed"></div>
+
+    <div id="top-actions">
+      <button id="btn-shop-open" class="mini-btn">المتجر (B)</button>
+      <button id="btn-scope" class="mini-btn">منظار</button>
+      <button id="btn-mobile-hud" class="mini-btn">أزرار اللمس</button>
+      <button id="btn-menu" class="mini-btn">القائمة</button>
+    </div>
+
+    <div class="hud-box" id="hp-box">
+      <span id="hp">+ 100</span>
+      <span id="armor">🛡 50</span>
+    </div>
+
+    <div class="hud-box" id="am-box">
+      <div id="wep-name">MP9 SMG</div>
+      <div id="am">30 / 120</div>
+    </div>
+  </div>
+
+  <div id="mobile-controls">
+    <div id="joy-move-zone"><div id="joy-move-knob"></div></div>
+    <div id="touch-aim-zone"></div>
+    <div id="mobile-btns">
+      <button id="m-fire" class="m-btn fire">إطلاق</button>
+      <button id="m-jump" class="m-btn">قفز</button>
+      <button id="m-reload" class="m-btn">تعبئة</button>
+      <button id="m-switch" class="m-btn">سلاح</button>
+    </div>
+  </div>
+
+  <div id="shop">
+    <h2>قائمة الشراء (CS2 Buy Menu) — الرصيد: <span id="shop-pts" style="color:#4ade80">$800</span></h2>
+    <div class="shop-grid">
+      <div class="shop-card">
+        <strong>AK-47 هجومية</strong>
+        <span>ضرر عالي + دقة متوسطة</span>
+        <button id="buy-ak">شراء ($1400)</button>
+      </div>
+      <div class="shop-card">
+        <strong>Nova شوتقن</strong>
+        <span>8 شظايا قريبة المدى</span>
+        <button id="buy-shotgun">شراء ($1100)</button>
+      </div>
+      <div class="shop-card">
+        <strong>AWP قناص</strong>
+        <span>طلقة قاتلة + منظار تقريب</span>
+        <button id="buy-awp">شراء ($2200)</button>
+      </div>
+      <div class="shop-card">
+        <strong>درع كيفلر + خوذة</strong>
+        <span>+100 درع لتقليل الضرر</span>
+        <button id="buy-armor">شراء ($650)</button>
+      </div>
+      <div class="shop-card">
+        <strong>حقيبة إسعاف</strong>
+        <span>استعادة +50 صحة</span>
+        <button id="buy-heal">شراء ($400)</button>
+      </div>
+      <div class="shop-card">
+        <strong>ذخيرة كاملة لكل الأسلحة</strong>
+        <span>تعبئة الاحتياطي بالكامل</span>
+        <button id="buy-ammo">شراء ($300)</button>
+      </div>
+    </div>
+    <button id="close-shop">العودة للقتال</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+  <script>if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(function(){});</script>
+</body>
+</html>

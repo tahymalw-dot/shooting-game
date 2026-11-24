@@ -1,0 +1,16 @@
+{
+  "name": "legend-shooter-android",
+  "version": "0.2.0",
+  "description": "Capacitor wrapper to package Legend Shooter as a real Android APK",
+  "scripts": {
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}

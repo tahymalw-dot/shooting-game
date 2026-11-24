@@ -1,0 +1,8 @@
+{
+  "appId": "com.legendshooter.game",
+  "appName": "Legend Shooter",
+  "webDir": "../",
+  "server": {
+    "androidScheme": "https"
+  }
+}
